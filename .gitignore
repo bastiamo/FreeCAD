@@ -69,3 +69,4 @@ tags
 # crowdin file
 src/Tools/freecad.zip
 
+/build-install/
