@@ -1761,14 +1761,23 @@ void Application::runApplication(void)
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 #endif
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
+    QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+#endif
+#if QT_VERSION >= 0x050600
+    //Enable automatic scaling based on pixel density of display (added in Qt 5.6)
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
+#if QT_VERSION >= 0x050100
+    //Enable support for highres images (added in Qt 5.1, but off by default)
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+#endif
+
     // if application not yet created by the splasher
     int argc = App::Application::GetARGC();
     GUISingleApplication mainApp(argc, App::Application::GetARGV());
     // http://forum.freecadweb.org/viewtopic.php?f=3&t=15540
     mainApp.setAttribute(Qt::AA_DontShowIconsInMenus, false);
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
-    mainApp.setAttribute(Qt::AA_UseDesktopOpenGL);
-#endif
 
 #ifdef Q_OS_UNIX
     // Make sure that we use '.' as decimal point. See also
@@ -1805,14 +1814,6 @@ void Application::runApplication(void)
         return;
     }
 
-#if QT_VERSION >= 0x050600
-    //Enable automatic scaling based on pixel density of display (added in Qt 5.6)
-    mainApp.setAttribute(Qt::AA_EnableHighDpiScaling);
-#endif
-#if QT_VERSION >= 0x050100
-    //Enable support for highres images (added in Qt 5.1, but off by default)
-    mainApp.setAttribute(Qt::AA_UseHighDpiPixmaps);
-#endif
     // set application icon and window title
     it = cfg.find("Application");
     if (it != cfg.end()) {
@@ -2065,6 +2066,13 @@ void Application::runApplication(void)
     mdi->setProperty("showImage", hGrp->GetBool("TiledBackground", false));
 
     std::string style = hGrp->GetASCII("StyleSheet");
+    if (style.empty()) {
+        // check the branding settings
+        const auto& config = App::Application::Config();
+        auto it = config.find("StyleSheet");
+        if (it != config.end())
+            style = it->second;
+    }
     if (!style.empty()) {
         QFile f(QLatin1String(style.c_str()));
         if (f.open(QFile::ReadOnly)) {
